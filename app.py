@@ -271,11 +271,16 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ─────────────────────────── MAIN CARD ───────────────────────────
-prod_val  = f"{latest['Production']/1000:.0f}K MT" if latest['Production'] > 1000 else f"{latest['Production']:.0f} MT"
-rain_val  = f"{latest['Rainfall']:.0f}mm"
-temp_val  = f"{latest['Temperature']:.1f}°C"
-fsi_val   = f"{latest['FSI']:.1f}"
-year_val  = int(latest["Year"])
+prod_val    = f"{latest['Production']/1000:.0f}K MT" if latest['Production'] > 1000 else f"{latest['Production']:.0f} MT"
+rain_val    = f"{latest['Rainfall']:.0f}mm"
+temp_val    = f"{latest['Temperature']:.1f}°C"
+fsi_val     = latest['FSI']
+year_val    = int(latest["Year"])
+price_val   = f"${latest['Price']:.0f}/MT" if 'Price' in latest.index else "N/A"
+trade_val   = f"${latest['TradeBalance']:.0f}M" if 'TradeBalance' in latest.index else "N/A"
+drought_val = latest['DroughtRisk'] if 'DroughtRisk' in latest.index else "N/A"
+fs_status   = latest['FSStatus'] if 'FSStatus' in latest.index else ("Food Secure" if fsi_val > 60 else "At Risk")
+fs_color    = "#00e676" if "Secure" in str(fs_status) else "#ffb300" if "Moderate" in str(fs_status) else "#ff4d6d"
 
 st.markdown(f"""
 <div class="main-card">
@@ -288,22 +293,28 @@ st.markdown(f"""
         </div>
         <div class="main-stats">
             <div class="stat-item">
+                <div class="stat-label">PRICE</div>
+                <div class="stat-value">{price_val}</div>
+            </div>
+            <div class="stat-item">
                 <div class="stat-label">PRODUCTION</div>
                 <div class="stat-value">{prod_val}</div>
             </div>
             <div class="stat-item">
-                <div class="stat-label">RAINFALL</div>
-                <div class="stat-value">{rain_val}</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label">TEMPERATURE</div>
-                <div class="stat-value">{temp_val}</div>
+                <div class="stat-label">TRADE BALANCE</div>
+                <div class="stat-value">{trade_val}</div>
             </div>
             <div class="stat-item">
                 <div class="stat-label">FSI STATUS</div>
-                <div class="stat-value" style="color:#00e676;">{
-                    'Food Secure' if fsi_val > '60' else 'At Risk'
-                }</div>
+                <div class="stat-value" style="color:{fs_color};">{fs_status}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">DROUGHT</div>
+                <div class="stat-value">{drought_val}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">RAINFALL</div>
+                <div class="stat-value">{rain_val}</div>
             </div>
         </div>
     </div>
@@ -372,14 +383,13 @@ with col3:
 # ─────────────────────────── METRICS ───────────────────────────
 st.markdown('<div class="section-title">📈 Key Metrics</div>', unsafe_allow_html=True)
 
-avg_yield  = data["Yield"].mean()
-# Derived / fallback metrics
-profit_margin = getattr(latest, "ProfitMargin", None) or (avg_yield * 6.5)  # fallback estimate
-loss_rate     = getattr(latest, "LossRate",     None) or max(5, 25 - avg_yield * 2)
+avg_yield     = data["Yield"].mean()
+profit_margin = data["ProfitMargin"].mean() if "ProfitMargin" in data.columns else 0
+loss_rate     = data["LossRate"].mean()     if "LossRate"     in data.columns else 0
 avg_fsi       = data["FSI"].mean()
-mechanization = getattr(latest, "Mechanization", None) or 80
-irrigation    = getattr(latest, "Irrigation",    None) or 30
-soil_health   = getattr(latest, "SoilHealth",    None) or 90
+mechanization = latest["Mechanization"]     if "Mechanization" in latest.index else 0
+irrigation    = latest["Irrigation"]        if "Irrigation"    in latest.index else 0
+soil_health   = latest["SoilHealth"]        if "SoilHealth"    in latest.index else 0
 avg_temp      = data["Temperature"].mean()
 
 cols = st.columns(8)
